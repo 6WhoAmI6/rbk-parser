@@ -1,50 +1,129 @@
 package main
 
 import (
-	"log"
-	"time"
+    "io/fs"
+    "log"
+    "os"
+    "strings"
+    "time"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/launcher"
+    "github.com/anaskhan96/soup"
+    "github.com/go-rod/rod"
+    "github.com/go-rod/rod/lib/launcher"
+    "github.com/go-rod/stealth"
 )
 
-func rbcParse() error {
-	/*launcher.NewBrowser().MustGet()
-	browser := rod.New().Timeout(time.Minute).MustConnect()
-	defer browser.MustClose()*/
+func rbcParse() (RBCNews, error) {
+    launcher.NewBrowser().MustGet()
+    browser := rod.New().Timeout(time.Minute).MustConnect()
+    defer browser.MustClose()
 
-	l := launcher.New().
-		Headless(false).
-		Devtools(true)
+    /*l := launcher.New().
+        Headless(false).
+        Devtools(true)
 
-	defer l.Cleanup() // remove launcher.FlagUserDataDir
+    defer l.Cleanup() // remove launcher.FlagUserDataDir
 
-	url := l.MustLaunch()
+    url := l.MustLaunch()
 
-	// Trace shows verbose debug information for each action executed
-	// SlowMotion is a debug related function that waits 2 seconds between
-	// each action, making it easier to inspect what your code is doing.
-	browser := rod.New().
-		ControlURL(url).
-		Trace(true).
-		SlowMotion(2 * time.Second).
-		MustConnect()
+    // Trace shows verbose debug information for each action executed
+    // SlowMotion is a debug related function that waits 2 seconds between
+    // each action, making it easier to inspect what your code is doing.
+    browser := rod.New().
+        ControlURL(url).
+        Trace(true).
+        //SlowMotion(2 * time.Second).
+        MustConnect()
 
-	// ServeMonitor plays screenshots of each tab. This feature is extremely
-	// useful when debugging with headless mode.
-	// You can also enable it with flag "-rod=monitor"
-	launcher.Open(browser.ServeMonitor(""))
+    // ServeMonitor plays screenshots of each tab. This feature is extremely
+    // useful when debugging with headless mode.
+    // You can also enable it with flag "-rod=monitor"
+    launcher.Open(browser.ServeMonitor(""))
 
-	defer browser.MustClose()
+    defer browser.MustClose()*/
 
-	//page := stealth.MustPage(browser)
+    page := stealth.MustPage(browser)
 
-	//page.MustNavigate("https://www.rbc.ru/").MustWaitLoad()
+    page.MustNavigate("https://www.rbc.ru/").MustWaitLoad()
 
-	page := browser.MustPage("https://www.rbc.ru/")
+    //page := browser.MustPage("https://www.rbc.ru/")
 
-	page.MustScreenshotFullPage("screen.png")
-	log.Println(page.MustHTML())
+    page.MustElement("div > div > div.td1083bb7 > div.o65fb5a61").MustClick().MustWaitLoad()
+    page.MustElement("body > div.live-tv-popup.js-live-tv-popup.active > div.live-tv-popup__head > div").MustClick().MustWaitLoad()
+    page.MustElement("body > div.push-allow.js-push-allow > div.push-allow__block.js-push-allow-block.active > div.push-allow__controls > div:nth-child(2) > a").MustClick().MustWaitLoad()
 
-	return nil
+    if DEBUG {
+        page.MustScreenshotFullPage("")
+        os.WriteFile("html1.html", []byte(page.MustHTML()), fs.ModePerm)
+    }
+
+    err := page.Mouse.Scroll(0, 1000000, 10)
+    if err != nil {
+        return RBCNews{}, err
+    }
+
+    if DEBUG {
+        page.MustScreenshotFullPage("")
+        os.WriteFile("html2.html", []byte(page.MustHTML()), fs.ModePerm)
+    }
+
+    html := page.MustHTML()
+
+    news := parseHTML(html)
+
+    return news, nil
+}
+
+func parseHTML(html string) RBCNews {
+    news := RBCNews{}
+
+    doc := soup.HTMLParse(html)
+
+    mainNewsBlock := doc.FindStrict("div", "class", "main js-main-reload")
+    if mainNewsBlock.Pointer != nil {
+        mainNews := mainNewsBlock.FindStrict("div", "class", "main__big js-main-reload-item")
+        if mainNews.Pointer != nil {
+            tmp := mainNews.FindStrict("a", "class", "main__big__link js-yandex-counter")
+            if tmp.Pointer != nil {
+                url := tmp.Attrs()["href"]
+                text := tmp.FullText()
+                log.Println(url, strings.TrimSpace(text))
+                news.MainNews = News{URL: url, Title: strings.TrimSpace(text)}
+            }
+        }
+    }
+
+    topNewsBlock := doc.FindStrict("div", "class", "main__list")
+    if topNewsBlock.Pointer != nil {
+        topNewsList := topNewsBlock.FindAllStrict("div", "class", "main__inner l-col-center")
+        for _, topNews := range topNewsList {
+            newsList := topNews.FindAllStrict("div", "class", "main__feed js-main-reload-item")
+            for _, item := range newsList {
+                tmp := item.FindStrict("a", "class", "main__feed__link js-yandex-counter js-visited")
+                if tmp.Pointer != nil {
+                    url := tmp.Attrs()["href"]
+                    text := tmp.FullText()
+                    log.Println(url, strings.TrimSpace(text))
+                    news.TopNews = append(news.TopNews, News{URL: url, Title: strings.TrimSpace(text)})
+                }
+            }
+
+        }
+    }
+
+    centralNewsBlock := doc.FindStrict("div", "class", "js-index-central-column")
+    if centralNewsBlock.Pointer != nil {
+        centralNewsList := centralNewsBlock.FindAll("div", "class", "js-index-doscroll")
+        for _, item := range centralNewsList {
+            tmp := item.Find("a", "class", "js-index-central-column-io")
+            if tmp.Pointer != nil {
+                url := tmp.Attrs()["href"]
+                text := tmp.FullText()
+                log.Println(url, strings.TrimSpace(text))
+                news.CentralNews = append(news.CentralNews, News{URL: url, Title: strings.TrimSpace(text)})
+            }
+        }
+    }
+
+    return news
 }

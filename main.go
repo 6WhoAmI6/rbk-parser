@@ -1,5 +1,12 @@
 package main
 
+import "log"
+
 func main() {
-    rbcParse()
+	news, err := rbcParse()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+    log.Printf("%+v", news)
 }
