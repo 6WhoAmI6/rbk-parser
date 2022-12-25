@@ -19,28 +19,28 @@ func rbcParse() (RBCNews, error) {
     defer browser.MustClose()
 
     /*l := launcher.New().
-        Headless(false).
-        Devtools(true)
+          Headless(false).
+          Devtools(true)
 
-    defer l.Cleanup() // remove launcher.FlagUserDataDir
+      defer l.Cleanup() // remove launcher.FlagUserDataDir
 
-    url := l.MustLaunch()
+      url := l.MustLaunch()
 
-    // Trace shows verbose debug information for each action executed
-    // SlowMotion is a debug related function that waits 2 seconds between
-    // each action, making it easier to inspect what your code is doing.
-    browser := rod.New().
-        ControlURL(url).
-        Trace(true).
-        //SlowMotion(2 * time.Second).
-        MustConnect()
+      // Trace shows verbose debug information for each action executed
+      // SlowMotion is a debug related function that waits 2 seconds between
+      // each action, making it easier to inspect what your code is doing.
+      browser := rod.New().
+          ControlURL(url).
+          Trace(true).
+          //SlowMotion(2 * time.Second).
+          MustConnect()
 
-    // ServeMonitor plays screenshots of each tab. This feature is extremely
-    // useful when debugging with headless mode.
-    // You can also enable it with flag "-rod=monitor"
-    launcher.Open(browser.ServeMonitor(""))
+      // ServeMonitor plays screenshots of each tab. This feature is extremely
+      // useful when debugging with headless mode.
+      // You can also enable it with flag "-rod=monitor"
+      launcher.Open(browser.ServeMonitor(""))
 
-    defer browser.MustClose()*/
+      defer browser.MustClose()*/
 
     page := stealth.MustPage(browser)
 

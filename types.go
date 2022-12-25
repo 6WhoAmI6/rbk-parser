@@ -10,3 +10,9 @@ type News struct {
     URL   string `json:"url"`
     Title string `json:"title"`
 }
+
+type Response struct {
+    Status string  `json:"status"`
+    Error  string  `json:"error"`
+    Data   RBCNews `json:"data"`
+}
