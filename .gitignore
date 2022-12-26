@@ -4,3 +4,5 @@ rbc-parser
 screen.png
 rbc-parser.exe
 tmp
+*.docx
+*.pdf
