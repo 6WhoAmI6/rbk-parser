@@ -1,5 +1,5 @@
 package main
 
 var (
-    DEBUG = true
+    DEBUG = false
 )
